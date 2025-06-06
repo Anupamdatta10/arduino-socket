@@ -4,18 +4,47 @@
   <title>Controller</title>
 </head>
 <body>
-  <h1>Controller</h1>
+  <h1>WebSocket Controller</h1>
   <button onclick="sendData(1)">Send 1</button>
   <button onclick="sendData(2)">Send 2</button>
   <button onclick="sendData(3)">Send 3</button>
   <button onclick="sendData(4)">Send 4</button>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <p id="status">Connecting...</p>
+  <p id="log"></p>
+
   <script>
-    const socket = io()
+    // Use wss:// because Render uses HTTPS
+    const socket = new WebSocket("wss://arduino-socket.onrender.com");
+
+    const statusEl = document.getElementById("status");
+    const logEl = document.getElementById("log");
+
+    socket.onopen = () => {
+      statusEl.textContent = "✅ Connected to WebSocket server";
+    };
+
+    socket.onmessage = (event) => {
+      const message = event.data;
+      logEl.innerHTML += `<br>📨 ${message}`;
+    };
+
+    socket.onclose = () => {
+      statusEl.textContent = "🔌 Disconnected from WebSocket server";
+    };
+
+    socket.onerror = (err) => {
+      statusEl.textContent = "❌ WebSocket error";
+      console.error(err);
+    };
 
     function sendData(num) {
-      socket.emit('buttonPress', num)
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(`Button ${num}`);
+        logEl.innerHTML += `<br>➡️ Sent: Button ${num}`;
+      } else {
+        alert("WebSocket not connected");
+      }
     }
   </script>
 </body>

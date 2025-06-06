@@ -1,53 +1,53 @@
+// server.js
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const WebSocket = require('ws');
 const cors = require('cors');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+const PORT = process.env.PORT || 3000;
 
-// Allow CORS for all
+// Serve static files (like HTML buttons if needed)
 app.use(cors());
 app.use(express.json());
-
-// Serve static HTML from /public (optional)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Socket.IO server setup
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+// Create a WebSocket server on the same HTTP server
+const wss = new WebSocket.Server({ server });
 
-// Handle Socket.IO connections
-io.on('connection', (socket) => {
-  console.log('Socket.IO client connected');
+wss.on('connection', ws => {
+  console.log('✅ WebSocket client connected');
 
-  socket.on('buttonPress', (data) => {
-    console.log(`Button pressed: ${data}`);
-    io.emit('controllerEvent', data);
+  ws.on('message', message => {
+    console.log('📨 Received from client:', message.toString());
+
+    // Broadcast to all connected clients
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(`Broadcast: ${message}`);
+      }
+    });
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  ws.send('👋 Hello from Node server');
+});
+
+// Optional REST API to emit messages
+app.post('/api/send', (req, res) => {
+  const { msg } = req.body;
+  if (!msg) return res.status(400).json({ error: 'Missing message' });
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(`From API: ${msg}`);
+    }
   });
+
+  res.json({ status: 'sent', msg });
 });
 
-// Optional REST endpoint
-app.post('/api/send-event', (req, res) => {
-  const { eventData } = req.body;
-
-  if (!eventData) return res.status(400).json({ error: 'Missing eventData' });
-
-  io.emit('controllerEvent', `HTTP: ${eventData}`);
-  res.json({ status: 'sent', event: eventData });
-});
-
-// Use Render-assigned PORT
-const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
