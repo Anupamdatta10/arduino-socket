@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Controller</title>
+</head>
+<body>
+  <h1>Controller</h1>
+  <button onclick="sendData(1)">Send 1</button>
+  <button onclick="sendData(2)">Send 2</button>
+  <button onclick="sendData(3)">Send 3</button>
+  <button onclick="sendData(4)">Send 4</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io()
+
+    function sendData(num) {
+      socket.emit('buttonPress', num)
+    }
+  </script>
+</body>
+</html>

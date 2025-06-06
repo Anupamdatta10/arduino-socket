@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Listener</title>
+</head>
+<body>
+  <h1>Listening for Controller Events</h1>
+  <ul id="log"></ul>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io()
+    const log = document.getElementById('log')
+
+    socket.on('controllerEvent', data => {
+      const li = document.createElement('li')
+      li.textContent = `Received: ${data}`
+      log.appendChild(li)
+    })
+  </script>
+</body>
+</html>
