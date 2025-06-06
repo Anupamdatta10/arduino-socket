@@ -1,71 +1,53 @@
-const express = require('express')
-const http = require('http')
-const { Server } = require('socket.io')
-const WebSocket = require('ws')
-const cors = require('cors')
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+const path = require('path');
 
-// Express app setup
-const app = express()
-app.use(cors())
-app.use(express.json())
-app.use(express.static('public'))
+const app = express();
+const server = http.createServer(app);
 
-// HTTP + Socket.IO server
-const server = http.createServer(app)
+// Allow CORS for all
+app.use(cors());
+app.use(express.json());
+
+// Serve static HTML from /public (optional)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Socket.IO server setup
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: "*",
+    methods: ["GET", "POST"]
   }
-})
+});
 
-// 💬 Socket.IO: Handle web browser / React / HTML page connections
-io.on('connection', socket => {
-  console.log('Socket.IO client connected')
+// Handle Socket.IO connections
+io.on('connection', (socket) => {
+  console.log('Socket.IO client connected');
 
-  socket.on('buttonPress', data => {
-    console.log(`Button ${data} pressed`)
-    io.emit('controllerEvent', data) // Broadcast to all
-  })
+  socket.on('buttonPress', (data) => {
+    console.log(`Button pressed: ${data}`);
+    io.emit('controllerEvent', data);
+  });
 
   socket.on('disconnect', () => {
-    console.log('Socket.IO client disconnected')
-  })
-})
+    console.log('Client disconnected');
+  });
+});
 
-// 🌐 Raw WebSocket: Handle ESP32 connections
-const wsServer = new WebSocket.Server({ server }) // Share the same HTTP server
-
-wsServer.on('connection', socket => {
-  console.log('ESP32 WebSocket connected')
-
-  socket.on('message', message => {
-    console.log('Received from ESP32:', message.toString())
-
-    // Relay to Socket.IO clients
-    io.emit('controllerEvent', `ESP32: ${message}`)
-  })
-
-  socket.send('Hello from Node.js server')
-})
-
-// 📮 REST endpoint for Postman or HTTP clients
+// Optional REST endpoint
 app.post('/api/send-event', (req, res) => {
-  const { eventData } = req.body
+  const { eventData } = req.body;
 
-  if (!eventData) {
-    return res.status(400).json({ error: 'Missing eventData in body' })
-  }
+  if (!eventData) return res.status(400).json({ error: 'Missing eventData' });
 
-  console.log('Received from HTTP client:', eventData)
+  io.emit('controllerEvent', `HTTP: ${eventData}`);
+  res.json({ status: 'sent', event: eventData });
+});
 
-  // Relay to Socket.IO clients
-  io.emit('controllerEvent', `HTTP: ${eventData}`)
-  res.send({ status: 'Event emitted', event: eventData })
-})
-
-// Start the server
-const PORT = 3000
+// Use Render-assigned PORT
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`)
-})
+  console.log(`Server running on port ${PORT}`);
+});
