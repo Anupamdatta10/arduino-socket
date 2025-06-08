@@ -129,8 +129,8 @@
     const logEl = document.getElementById("log");
 
     function connectWebSocket() {
-      //socket = new WebSocket("wss://arduino-socket.onrender.com");
-      socket = new WebSocket("ws://localhost:3000");
+      socket = new WebSocket("wss://arduino-socket.onrender.com");
+      //socket = new WebSocket("ws://localhost:3000");
 
       socket.onopen = () => {
         statusEl.textContent = "✅ Connected to WebSocket server";
