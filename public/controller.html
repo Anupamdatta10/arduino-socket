@@ -8,10 +8,19 @@
       flex-direction: column;
       align-items: center;
       margin-bottom: 20px;
-      position: fixed;         /* Add this */
-      left: 30px;              /* Add this: distance from left */
-      top: 50%;                /* Add this: vertically center */
-      transform: translateY(-50%); /* Add this: vertically center */
+      position: fixed;
+      left: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .stop-btn-container {
+      position: fixed;
+      right: 100px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .arrow-row {
       display: flex;
@@ -28,6 +37,18 @@
       width: 160px;
       display: flex;
       justify-content: space-between;
+    }
+    .stop-btn {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      font-size: 2rem;
+      margin-top: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .stop-btn:hover {
+      background: #c0392b;
     }
   </style>
 </head>
@@ -46,38 +67,51 @@
     </div>
   </div>
 
+  <!-- Stop button on the right side -->
+  <div class="stop-btn-container">
+    <button class="arrow-btn stop-btn" onclick="sendData('stop')">⏹️</button>
+  </div>
+
   <p id="status">Connecting...</p>
   <p id="log"></p>
 
   <script>
     // Use wss:// because Render uses HTTPS
-    const socket = new WebSocket("wss://arduino-socket.onrender.com");
-    //test locally with ws://localhost:3000
+    let socket;
     const statusEl = document.getElementById("status");
     const logEl = document.getElementById("log");
 
-    socket.onopen = () => {
-      statusEl.textContent = "✅ Connected to WebSocket server";
-    };
+    function connectWebSocket() {
+      socket = new WebSocket("wss://arduino-socket.onrender.com");
+      //test locally with ws://localhost:3000
 
-    socket.onmessage = (event) => {
-      const message = event.data;
-      //logEl.innerHTML += `<br>📨 ${message}`;
-    };
+      socket.onopen = () => {
+        statusEl.textContent = "✅ Connected to WebSocket server";
+      };
 
-    socket.onclose = () => {
-      statusEl.textContent = "🔌 Disconnected from WebSocket server";
-    };
+      socket.onmessage = (event) => {
+        const message = event.data;
+        //logEl.innerHTML += `<br>📨 ${message}`;
+      };
 
-    socket.onerror = (err) => {
-      statusEl.textContent = "❌ WebSocket error";
-      console.error(err);
-    };
+      socket.onclose = () => {
+        statusEl.textContent = "🔌 Disconnected from WebSocket server. Reconnecting...";
+        setTimeout(connectWebSocket, 2000); // Try to reconnect after 2 seconds
+      };
+
+      socket.onerror = (err) => {
+        statusEl.textContent = "❌ WebSocket error";
+        console.error(err);
+        socket.close(); // Ensure socket is closed on error
+      };
+    }
+
+    connectWebSocket();
 
     function sendData(num) {
       if (socket.readyState === WebSocket.OPEN) {
-        socket.send(`Button ${num}`);
-       // logEl.innerHTML += `<br>➡️ Sent: Button ${num}`;
+        socket.send(num);
+        // logEl.innerHTML += `<br>➡️ Sent: Button ${num}`;
       } else {
         alert("WebSocket not connected");
       }

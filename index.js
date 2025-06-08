@@ -26,7 +26,7 @@ wss.on('connection', ws => {
     // Broadcast to all connected clients
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(`Broadcast: ${message}`);
+        client.send(message);
       }
     });
   });
@@ -34,19 +34,7 @@ wss.on('connection', ws => {
   ws.send('👋 Hello from Node server');
 });
 
-// Optional REST API to emit messages
-app.post('/api/send', (req, res) => {
-  const { msg } = req.body;
-  if (!msg) return res.status(400).json({ error: 'Missing message' });
 
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(`From API: ${msg}`);
-    }
-  });
-
-  res.json({ status: 'sent', msg });
-});
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
