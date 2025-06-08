@@ -186,6 +186,10 @@
       if (socket.readyState === WebSocket.OPEN) {
         socket.send(`${num}`);
         // logEl.innerHTML += `<br>➡️ Sent: Button ${num}`;
+        // Vibrate on button press (if supported)
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate(100);
+        }
       } else {
         alert("WebSocket not connected");
       }
