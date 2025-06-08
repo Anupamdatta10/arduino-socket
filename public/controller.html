@@ -82,7 +82,9 @@
     const logEl = document.getElementById("log");
 
     function connectWebSocket() {
-      socket = new WebSocket("wss://arduino-socket.onrender.com");
+      //socket = new WebSocket("wss://arduino-socket.onrender.com");
+      socket = new WebSocket("ws://localhost:3000");
+
       //test locally with ws://localhost:3000
 
       socket.onopen = () => {
@@ -91,7 +93,7 @@
 
       socket.onmessage = (event) => {
         const message = event.data;
-        //logEl.innerHTML += `<br>📨 ${message}`;
+        logEl.innerHTML += `<br>📨 ${message}`;
       };
 
       socket.onclose = () => {
@@ -110,7 +112,7 @@
 
     function sendData(num) {
       if (socket.readyState === WebSocket.OPEN) {
-        socket.send(num);
+        socket.send(`${num}`);
         // logEl.innerHTML += `<br>➡️ Sent: Button ${num}`;
       } else {
         alert("WebSocket not connected");
