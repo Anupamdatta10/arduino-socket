@@ -2,7 +2,14 @@
 <html>
 <head>
   <title>Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8">
   <style>
+    html, body {
+      touch-action: manipulation; /* disables double-tap zoom */
+      -ms-touch-action: manipulation; /* for older Microsoft browsers */
+    }
+
     .controller-arrows {
       display: flex;
       flex-direction: column;
@@ -50,10 +57,47 @@
     .stop-btn:hover {
       background: #c0392b;
     }
+    /* Center heading, status, and log */
+    h1 {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .center-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: absolute;
+      left: 50%;
+      top: 30%;
+      transform: translate(-50%, -50%);
+      width: 60%;
+      min-width: 300px;
+      max-width: 500px;
+    }
+    #status {
+      text-align: center;
+      margin: 80px 0 0 0;
+      word-break: break-all;
+      font-weight: bold;
+    }
+    #log {
+      text-align: center;
+      margin: 10px 0 0 0;
+      word-break: break-all;
+      height: 150px;           /* Fixed height for log area */
+      max-height: 150px;
+      overflow-y: auto;        /* Scroll if more logs */
+      width: 100%;
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 8px 0;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
-  <h1>WebSocket Controller</h1>
+  <h1>Car Controller</h1>
   <div class="controller-arrows">
     <div class="arrow-row">
       <button class="arrow-btn" onclick="sendData('forward')">&#8593;</button>
@@ -72,8 +116,11 @@
     <button class="arrow-btn stop-btn" onclick="sendData('stop')">⏹️</button>
   </div>
 
-  <p id="status">Connecting...</p>
-  <p id="log"></p>
+  <!-- Centered status and log -->
+  <div class="center-info">
+    <p id="status">Connecting...</p>
+    <p id="log"></p>
+  </div>
 
   <script>
     // Use wss:// because Render uses HTTPS
@@ -82,10 +129,8 @@
     const logEl = document.getElementById("log");
 
     function connectWebSocket() {
-      socket = new WebSocket("wss://arduino-socket.onrender.com");
-      //socket = new WebSocket("ws://localhost:3000");
-
-      //test locally with ws://localhost:3000
+      //socket = new WebSocket("wss://arduino-socket.onrender.com");
+      socket = new WebSocket("ws://localhost:3000");
 
       socket.onopen = () => {
         statusEl.textContent = "✅ Connected to WebSocket server";
@@ -93,7 +138,13 @@
 
       socket.onmessage = (event) => {
         const message = event.data;
-        logEl.innerHTML += `<br>📨 ${message}`;
+        const now = new Date();
+        const time = now.toLocaleTimeString();
+        // Maintain only last 5 logs with timestamp
+        let logs = logEl.innerHTML.split('<br>').filter(line => line.trim() !== "");
+        logs.push(`[${time}] 📨 ${message}`);
+        if (logs.length > 5) logs = logs.slice(logs.length - 5);
+        logEl.innerHTML = logs.join('<br>');
       };
 
       socket.onclose = () => {
