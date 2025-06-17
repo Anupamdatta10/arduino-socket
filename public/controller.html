@@ -181,7 +181,10 @@
 
   <!-- Stop button, camera button (down), and light button side by side on the right side -->
   <div class="stop-btn-container" style="flex-direction: row; gap: 1px; align-items: flex-end;">
-    <button class="arrow-btn stop-btn" onclick="sendData('stop')" title="Stop">⏹️</button>
+   <!-- Light button beside camera button -->
+    <button id="light-btn" class="arrow-btn light-btn" title="Toggle Light" aria-pressed="false">
+      <span id="bulb-icon" style="font-size:1.7rem;">💡</span>
+    </button> 
     <!-- Horn, Clear Logs, and Camera buttons stacked in a column -->
     <div style="display: flex; flex-direction: column; align-items: center;">
       <!-- Horn button at the top -->
@@ -194,9 +197,7 @@
       </button>
     </div>
     <!-- Light button beside camera button -->
-    <button id="light-btn" class="arrow-btn light-btn" title="Toggle Light" aria-pressed="false">
-      <span id="bulb-icon" style="font-size:1.7rem;">💡</span>
-    </button>
+    <button class="arrow-btn stop-btn" onclick="sendData('stop')" title="Stop">⏹️</button>
   </div>
 
   <!-- Centered status and log -->
