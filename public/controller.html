@@ -165,7 +165,11 @@
 </head>
 <body>
   <button id="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
+  <button id="toggle-video-btn" title="Show/Hide Video" style="position:fixed;top:20px;left:30px;z-index:1000;background:#222;color:#fff;border:none;border-radius:8px;font-size:1.5rem;padding:8px 16px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);transition:background 0.2s;">🎥</button>
   <h1>Car Controller</h1>
+  <div style="display: flex; justify-content: center; margin-bottom: 20px;" id="video-div">
+  <img id="video-stream" src="/stream" width="320" height="240" alt="Live Video Stream" style="border: 3px solid #222; border-radius: 12px;" />
+</div>
   <div class="controller-arrows">
     <div class="arrow-row">
       <button class="arrow-btn" onclick="sendData('forward')">&#8593;</button>
@@ -219,7 +223,7 @@
 
     function connectWebSocket() {
       socket = new WebSocket("wss://arduino-socket.onrender.com");
-      // socket = new WebSocket("ws://localhost:3000");
+      //socket = new WebSocket("ws://localhost:3000");
 
       socket.onopen = () => {
         statusEl.textContent = "✅ Connected to WebSocket server";
@@ -313,6 +317,29 @@
     document.getElementById('clear-log-btn').onclick = function() {
       logEl.innerHTML = "";
     };
+
+    // Toggle video and log visibility
+    const videoDiv = document.getElementById('video-div');
+    const logP = document.getElementById('log');
+    const toggleVideoBtn = document.getElementById('toggle-video-btn');
+    let videoVisible = true;
+
+    function updateLogVisibility() {
+      if (videoVisible) {
+        logP.style.display = "none";
+      } else {
+        logP.style.display = "";
+      }
+    }
+
+    toggleVideoBtn.onclick = function() {
+      videoVisible = !videoVisible;
+      videoDiv.style.display = videoVisible ? "" : "none";
+      updateLogVisibility();
+    };
+
+    // Initial state
+    updateLogVisibility();
   </script>
 </body>
 </html>
