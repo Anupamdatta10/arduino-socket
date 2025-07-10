@@ -12,22 +12,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// MJPEG buffer for storing latest frame
-let latestFrame = null;
+let latestFrame = null;  // Holds most recent binary frame from ESP32
 
-// Handle image uploads from ESP32
-app.post('/upload', (req, res) => {
-  let data = Buffer.alloc(0);
-  req.on('data', chunk => {
-    data = Buffer.concat([data, chunk]);
-  });
-  req.on('end', () => {
-    latestFrame = data;
-    res.sendStatus(200);
-  });
-});
-
-// MJPEG stream endpoint for browser
+// MJPEG stream endpoint
 app.get('/stream', (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'multipart/x-mixed-replace; boundary=frame',
@@ -43,27 +30,39 @@ app.get('/stream', (req, res) => {
       res.write(`Content-Length: ${latestFrame.length}\r\n\r\n`);
       res.write(latestFrame);
       res.write('\r\n');
+    } else {
+      // Optionally, send blank frame or text fallback
+      res.write(`--frame\r\n`);
+      res.write(`Content-Type: text/plain\r\n\r\n`);
+      res.write('No video available\r\n\r\n');
     }
-  }, 100); // ~10fps
+  }, 100); // ~10 FPS
 
   req.on('close', () => clearInterval(interval));
 });
 
-// WebSocket for control
+// WebSocket setup
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', ws => {
   console.log('✅ WebSocket client connected');
 
   ws.on('message', message => {
-    console.log('📨 Control received:', message.toString());
+    if (Buffer.isBuffer(message)) {
+      // Binary frame from ESP32-CAM
+      latestFrame = message;
+      // Optionally log size: console.log(`🖼️ Frame received: ${message.length} bytes`);
+    } else {
+      const msg = message.toString();
+      console.log('📨 Control received:', msg);
 
-    // Broadcast to all connected clients (including ESP32)
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(`${message}`);
-      }
-    });
+      // Broadcast command to all clients (e.g., ESP32)
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(msg);
+        }
+      });
+    }
   });
 
   ws.send('👋 Hello from Node server');
