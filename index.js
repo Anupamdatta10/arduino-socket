@@ -47,23 +47,29 @@ const wss = new WebSocket.Server({ server });
 wss.on('connection', ws => {
   console.log('✅ WebSocket client connected');
 
-  ws.on('message', message => {
-    if (Buffer.isBuffer(message)) {
-      // Binary frame from ESP32-CAM
+  ws.on('message', (message, isBinary) => {
+  try {
+    if (isBinary) {
+      // Frame from ESP32
       latestFrame = message;
-      // Optionally log size: console.log(`🖼️ Frame received: ${message.length} bytes`);
+      console.log(`🖼️ Frame received (${message.length} bytes)`);
     } else {
       const msg = message.toString();
       console.log('📨 Control received:', msg);
 
-      // Broadcast command to all clients (e.g., ESP32)
+      // Broadcast command to all clients (for ESP32)
       wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(msg);
         }
       });
     }
-  });
+  } catch (err) {
+    console.error("💥 Error processing WebSocket message:", err);
+    ws.close(); // Ensure socket closes cleanly on error
+  }
+});
+
 
   ws.send('👋 Hello from Node server');
 });
