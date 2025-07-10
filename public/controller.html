@@ -22,12 +22,13 @@
     }
     .stop-btn-container {
       position: fixed;
-      right: 100px;
-      top: 50%;
+      right: 50px;
+      top: 45%;
       transform: translateY(-50%);
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
+      gap: 1px;
     }
     .arrow-row {
       display: flex;
@@ -56,6 +57,52 @@
     }
     .stop-btn:hover {
       background: #c0392b;
+    }
+    .light-btn {
+      background: #f1c40f;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 2rem;
+      margin-top: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      outline: none;
+    }
+    .light-btn[aria-pressed="true"], .light-btn.active {
+      background: #ffd700;
+      color: #222;
+      box-shadow: 0 4px 12px rgba(241,196,15,0.4);
+    }
+    .light-btn:hover {
+      background: #ffe066;
+      color: #222;
+    }
+    .camera-btn {
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 2rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      outline: none;
+      position: relative;
+      z-index: 1;
+    }
+    .camera-btn:hover {
+      background: #3498db;
+      color: #fff;
     }
     /* Center heading, status, and log */
     h1 {
@@ -118,7 +165,11 @@
 </head>
 <body>
   <button id="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
+  <button id="toggle-video-btn" title="Show/Hide Video" style="position:fixed;top:20px;left:30px;z-index:1000;background:#222;color:#fff;border:none;border-radius:8px;font-size:1.5rem;padding:8px 16px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);transition:background 0.2s;">🎥</button>
   <h1>Car Controller</h1>
+  <div style="display: flex; justify-content: center; margin-bottom: 20px;" id="video-div">
+  <img id="video-stream" src="/stream" width="320" height="240" alt="Live Video Stream" style="border: 3px solid #222; border-radius: 12px;" />
+</div>
   <div class="controller-arrows">
     <div class="arrow-row">
       <button class="arrow-btn" onclick="sendData('forward')">&#8593;</button>
@@ -132,15 +183,36 @@
     </div>
   </div>
 
-  <!-- Stop button on the right side -->
-  <div class="stop-btn-container">
-    <button class="arrow-btn stop-btn" onclick="sendData('stop')">⏹️</button>
+  <!-- Stop button, camera button (down), and light button side by side on the right side -->
+  <div class="stop-btn-container" style="flex-direction: row; gap: 1px; align-items: flex-end;">
+   <!-- Light button beside camera button -->
+    <button id="light-btn" class="arrow-btn light-btn" title="Toggle Light" aria-pressed="false">
+      <span id="bulb-icon" style="font-size:1.7rem;">💡</span>
+    </button> 
+    <!-- Horn, Clear Logs, and Camera buttons stacked in a column -->
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <!-- Horn button at the top -->
+      <button id="horn-btn" class="arrow-btn" title="Horn" style="margin-bottom: 8px; background: #ff9800; color: #fff; border-radius: 50%;">🔊</button>
+      <!-- Clear Logs button -->
+      <button id="clear-log-btn" class="arrow-btn" title="Clear Logs" style="margin-bottom: 8px; background: #12e123b9; color: #fff; border-radius: 50%;">🧹</button>
+      <!-- Camera button in the middle, moved further down for V shape -->
+      <button id="camera-btn" class="arrow-btn camera-btn" title="Camera" onclick="sendData('camera')" style="margin-bottom: -60px;">
+        <span style="font-size:1.7rem;">📷</span>
+      </button>
+    </div>
+    <!-- Light button beside camera button -->
+    <button class="arrow-btn stop-btn" onclick="sendData('stop')" title="Stop">⏹️</button>
   </div>
 
   <!-- Centered status and log -->
   <div class="center-info">
     <p id="status">Connecting...</p>
     <p id="log"></p>
+    <!-- Slider input for value 0-10 -->
+    <label for="slider" style="margin-top:20px;">Speed:<span id="slider-value">5</span>
+      <input type="range" id="slider" min="0" max="10" value="5" style="width: 80%;">
+    </label>
+    
   </div>
 
   <script>
@@ -151,7 +223,7 @@
 
     function connectWebSocket() {
       socket = new WebSocket("wss://arduino-socket.onrender.com");
-     // socket = new WebSocket("ws://localhost:3000");
+      //socket = new WebSocket("ws://localhost:3000");
 
       socket.onopen = () => {
         statusEl.textContent = "✅ Connected to WebSocket server";
@@ -195,6 +267,17 @@
       }
     }
 
+    // Slider logic
+    const slider = document.getElementById('slider');
+    const sliderValue = document.getElementById('slider-value');
+    // const sendSliderBtn = document.getElementById('send-slider-btn');
+
+    slider.oninput = function() {
+      sliderValue.textContent = slider.value;
+      sendData('slider:' + slider.value);
+    };
+
+
     document.getElementById('fullscreen-btn').onclick = function() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
@@ -202,6 +285,61 @@
         document.exitFullscreen();
       }
     };
+
+    // Light button logic
+    const lightBtn = document.getElementById('light-btn');
+    let lightOn = false;
+    lightBtn.onclick = function() {
+      lightOn = !lightOn;
+      if (lightOn) {
+        sendData('light:on');
+        lightBtn.setAttribute('aria-pressed', 'true');
+        lightBtn.classList.add('active');
+      } else {
+        sendData('light:off');
+        lightBtn.setAttribute('aria-pressed', 'false');
+        lightBtn.classList.remove('active');
+      }
+    };
+
+    // Camera button logic (optional: add your own logic if needed)
+    document.getElementById('camera-btn').onclick = function() {
+      sendData('camera');
+      // Optionally add more camera logic here
+    };
+
+    // Horn button logic
+    document.getElementById('horn-btn').onclick = function() {
+      sendData('horn');
+    };
+
+    // Clear log button logic
+    document.getElementById('clear-log-btn').onclick = function() {
+      logEl.innerHTML = "";
+    };
+
+    // Toggle video and log visibility
+    const videoDiv = document.getElementById('video-div');
+    const logP = document.getElementById('log');
+    const toggleVideoBtn = document.getElementById('toggle-video-btn');
+    let videoVisible = true;
+
+    function updateLogVisibility() {
+      if (videoVisible) {
+        logP.style.display = "none";
+      } else {
+        logP.style.display = "";
+      }
+    }
+
+    toggleVideoBtn.onclick = function() {
+      videoVisible = !videoVisible;
+      videoDiv.style.display = videoVisible ? "" : "none";
+      updateLogVisibility();
+    };
+
+    // Initial state
+    updateLogVisibility();
   </script>
 </body>
 </html>
